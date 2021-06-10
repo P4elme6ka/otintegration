@@ -1,4 +1,4 @@
-module gogithub.com/P4elme6ka/otracing2gin
+module github.com/P4elme6ka/otracing2gin
 
 go 1.13
 
