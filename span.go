@@ -244,6 +244,17 @@ func GetGorestSpan(r *rest.Request) (opentracing.Span, error) {
 	return span, nil
 }
 
+// GetGorestSubSpan extracts span from gorest request.
+func GetGorestSubSpan(r *rest.Request, operationName string) (opentracing.Span, error) {
+	spanI, _ := r.Env[spanContextKey]
+	span, ok := spanI.(opentracing.Span)
+	if span == nil || !ok {
+		return nil, ErrSpanNotFound
+	}
+	sub := GetSubSpan(span, operationName)
+	return sub, nil
+}
+
 func GetSubSpan(spanRoot opentracing.Span, operationName string, opt ...opentracing.StartSpanOption) opentracing.Span {
 	opt = append(opt, opentracing.ChildOf(spanRoot.Context()))
 	return spanRoot.Tracer().StartSpan(operationName, opt...)
