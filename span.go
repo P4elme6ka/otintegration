@@ -44,7 +44,7 @@ func StartDBSpanWithParent(parent opentracing.SpanContext, operationName, dbInst
 
 // StartSpanWithParent will start a new span with a parent span.
 // example:
-//      span:= StartSpanWithParent(c.Get("tracing-context"),
+//      span:= StartSpanWithParent(c.Get(spanContextKey),
 func StartSpanWithParent(parent opentracing.SpanContext, operationName, method, path string) opentracing.Span {
 	options := []opentracing.StartSpanOption{
 		opentracing.Tag{Key: ext.SpanKindRPCServer.Key, Value: ext.SpanKindRPCServer.Value},
@@ -65,7 +65,7 @@ func StartSpanWithParent(parent opentracing.SpanContext, operationName, method, 
 //  func handleGet(c *gin.Context) {
 //     span := StartSpanWithHeader(&c.Request.Header, "api-request", method, path)
 //     defer span.Finish()
-//     c.Set("tracing-context", span) // add the span to the context so it can be used for the duration of the request.
+//     c.Set(spanContextKey, span) // add the span to the context so it can be used for the duration of the request.
 //     bosePersonID := c.Param("bosePersonID")
 //     span.SetTag("bosePersonID", bosePersonID)
 //
