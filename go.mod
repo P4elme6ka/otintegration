@@ -1,6 +1,6 @@
 module github.com/P4elme6ka/otracing2gin
 
-go 1.13
+go 1.16
 
 require (
 	github.com/HdrHistogram/hdrhistogram-go v1.1.0 // indirect
