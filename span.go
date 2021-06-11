@@ -2,6 +2,7 @@ package otracing2gin
 
 import (
 	"errors"
+	"github.com/ant0ine/go-json-rest/rest"
 	"github.com/gin-gonic/gin"
 	"net/http"
 	"runtime"
@@ -223,8 +224,8 @@ func InjectToHeaders(tracer opentracing.Tracer, abortOnErrors bool) gin.HandlerF
 	}
 }
 
-// GetSpan extracts span from context.
-func GetSpan(ctx *gin.Context) (opentracing.Span, error) {
+// GetGinSpan extracts span from gin context.
+func GetGinSpan(ctx *gin.Context) (opentracing.Span, error) {
 	spanI, _ := ctx.Get(spanContextKey)
 	span, ok := spanI.(opentracing.Span)
 	if span == nil || !ok {
@@ -233,9 +234,14 @@ func GetSpan(ctx *gin.Context) (opentracing.Span, error) {
 	return span, nil
 }
 
-// MustGetSpan extracts span from context. It panics if span was not set.
-func MustGetSpan(ctx *gin.Context) opentracing.Span {
-	return ctx.MustGet(spanContextKey).(opentracing.Span)
+// GetGorestSpan extracts span from gorest request.
+func GetGorestSpan(r *rest.Request) (opentracing.Span, error) {
+	spanI, _ := r.Env[spanContextKey]
+	span, ok := spanI.(opentracing.Span)
+	if span == nil || !ok {
+		return nil, ErrSpanNotFound
+	}
+	return span, nil
 }
 
 func GetSubSpan(spanRoot opentracing.Span, operationName string, opt ...opentracing.StartSpanOption) opentracing.Span {
