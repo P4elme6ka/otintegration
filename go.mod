@@ -3,6 +3,7 @@ module github.com/P4elme6ka/otracing2gin
 go 1.13
 
 require (
+	github.com/ant0ine/go-json-rest v3.3.2+incompatible // indirect
 	github.com/gin-gonic/gin v1.7.2 // indirect
 	github.com/opentracing/opentracing-go v1.2.0 // indirect
 	github.com/prometheus/client_golang v1.11.0 // indirect
