@@ -49,7 +49,7 @@ func OpenTracerGorestMiddleware(operationPrefix []byte) rest.MiddlewareSimple {
 
 			next(w, r)
 
-			span.SetTag(string(ext.HTTPStatusCode), r.Response.StatusCode)
+			//span.SetTag(string(ext.HTTPStatusCode), r.Response.StatusCode)
 		}
 	}
 }
