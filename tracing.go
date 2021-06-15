@@ -4,8 +4,6 @@ import (
 	"fmt"
 	"io"
 
-	jaegerprom "github.com/uber/jaeger-lib/metrics/prometheus"
-
 	"github.com/opentracing/opentracing-go"
 	"github.com/sirupsen/logrus"
 	"github.com/uber/jaeger-client-go"
@@ -65,8 +63,11 @@ func InitTracing(serviceName string, tracingAgentHostPort string, opt ...Option)
 	for _, o := range opt {
 		o(&opts)
 	}
-	factory := jaegerprom.New()
-	metrics := jaeger.NewMetrics(factory, map[string]string{"lib": "jaeger"})
+	//factory := jaegerprom.New()
+	//metrics := jaeger.NewMetrics(factory, map[string]string{"lib": "jaeger"})
+
+	metrics := jaeger.NewNullMetrics()
+
 	transport, err := jaeger.NewUDPTransport(tracingAgentHostPort, 0)
 	if err != nil {
 		return tracer, reporter, closer, err
