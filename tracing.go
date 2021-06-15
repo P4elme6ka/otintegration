@@ -2,11 +2,11 @@ package otracing2gin
 
 import (
 	"fmt"
-	"io"
-
 	"github.com/opentracing/opentracing-go"
 	"github.com/sirupsen/logrus"
 	"github.com/uber/jaeger-client-go"
+	jaegerprom "github.com/uber/jaeger-lib/metrics/prometheus"
+	"io"
 )
 
 // LogrusAdapter - an adapter to log span info
@@ -63,10 +63,8 @@ func InitTracing(serviceName string, tracingAgentHostPort string, opt ...Option)
 	for _, o := range opt {
 		o(&opts)
 	}
-	//factory := jaegerprom.New()
-	//metrics := jaeger.NewMetrics(factory, map[string]string{"lib": "jaeger"})
-
-	metrics := jaeger.NewNullMetrics()
+	factory := jaegerprom.New()
+	metrics := jaeger.NewMetrics(factory, map[string]string{"lib": "jaeger"})
 
 	transport, err := jaeger.NewUDPTransport(tracingAgentHostPort, 0)
 	if err != nil {
