@@ -4,6 +4,7 @@ import (
 	"errors"
 	"github.com/ant0ine/go-json-rest/rest"
 	"github.com/gin-gonic/gin"
+	"github.com/opentracing/opentracing-go/log"
 	"io"
 	"net/http"
 	"runtime"
@@ -247,3 +248,35 @@ func GetSubSpan(spanRoot opentracing.Span, operationName string, opt ...opentrac
 	opt = append(opt, opentracing.ChildOf(spanRoot.Context()))
 	return spanRoot.Tracer().StartSpan(operationName, opt...)
 }
+
+func NewEmptySpan() opentracing.Span {
+	return EmptySpan{}
+}
+
+type EmptySpan struct{}
+
+func (e EmptySpan) Finish() {}
+
+func (e EmptySpan) FinishWithOptions(opts opentracing.FinishOptions) {}
+
+func (e EmptySpan) Context() opentracing.SpanContext { return nil }
+
+func (e EmptySpan) SetOperationName(operationName string) opentracing.Span { return nil }
+
+func (e EmptySpan) SetTag(key string, value interface{}) opentracing.Span { return nil }
+
+func (e EmptySpan) LogFields(fields ...log.Field) {}
+
+func (e EmptySpan) LogKV(alternatingKeyValues ...interface{}) {}
+
+func (e EmptySpan) SetBaggageItem(restrictedKey, value string) opentracing.Span { return nil }
+
+func (e EmptySpan) BaggageItem(restrictedKey string) string { return "" }
+
+func (e EmptySpan) Tracer() opentracing.Tracer { return nil }
+
+func (e EmptySpan) LogEvent(event string) {}
+
+func (e EmptySpan) LogEventWithPayload(event string, payload interface{}) {}
+
+func (e EmptySpan) Log(data opentracing.LogData) {}
