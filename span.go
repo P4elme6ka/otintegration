@@ -92,7 +92,7 @@ func StartSpanWithHeader(header *http.Header, tracer opentracing.Tracer, operati
 	if header != nil {
 		wireContext, _ = tracer.Extract(opentracing.HTTPHeaders, opentracing.HTTPHeadersCarrier(*header))
 	}
-	return StartSpanWithParent(wireContext, operationName, method, path)
+	return StartSpanWithParent(wireContext, operationName, method, path, tracer)
 }
 
 // NewSpan returns gin.HandlerFunc (middleware) that starts a new span and injects it to request context.
@@ -263,7 +263,7 @@ func ExtractFromBinary(tracer opentracing.Tracer, inter Injectable) opentracing.
 
 func StartSpanFromBinary(tracer opentracing.Tracer, inter Injectable, operName string) opentracing.Span {
 	ctx := ExtractFromBinary(tracer, inter)
-	return StartSpanWithBinParent(ctx, operName)
+	return StartSpanWithBinParent(ctx, operName, tracer)
 }
 
 func GetSubSpan(spanRoot opentracing.Span, operationName string, opt ...opentracing.StartSpanOption) opentracing.Span {
