@@ -282,7 +282,7 @@ func InjectToBinary(r *rest.Request, inter Injectable) {
 
 func ExtractFromBinary(tracer opentracing.Tracer, inteface Injectable, operationName string) opentracing.Span {
 
-	spanCtx, _ := tracer.Extract(opentracing.Binary, inteface.GetIoWriter()) // TODO: error handling
+	spanCtx, _ := tracer.Extract(opentracing.Binary, inteface.GetIoReader()) // TODO: error handling
 
 	return StartSpanWithBinParent(spanCtx, operationName)
 }
