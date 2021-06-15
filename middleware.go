@@ -41,7 +41,7 @@ func OpenTracerGorestMiddleware(operationPrefix []byte, tracer *opentracing.Trac
 				span = StartSpanWithParent(cspan.(opentracing.Span).Context(), string(operationPrefix)+" "+r.URL.Path, r.Method, r.URL.Path)
 
 			} else {
-				span = StartSpanWithHeader(&r.Header, tracer, string(operationPrefix)+" "+r.URL.Path, r.Method, r.URL.Path)
+				span = StartSpanWithHeader(&r.Header, *tracer, string(operationPrefix)+" "+r.URL.Path, r.Method, r.URL.Path)
 			}
 			defer span.Finish() // after all the other defers are completed, finish the span
 
