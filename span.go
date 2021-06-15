@@ -49,8 +49,6 @@ func StartDBSpanWithParent(parent opentracing.SpanContext, operationName, dbInst
 }
 
 // StartSpanWithParent will start a new span with a parent span.
-// example:
-//      span:= StartSpanWithParent(c.Get(spanContextKey),
 func StartSpanWithParent(parent opentracing.SpanContext, operationName, method, path string, tracer opentracing.Tracer) opentracing.Span {
 	options := []opentracing.StartSpanOption{
 		opentracing.Tag{Key: ext.SpanKindRPCServer.Key, Value: ext.SpanKindRPCServer.Value},
@@ -79,33 +77,12 @@ func StartSpanWithBinParent(parent opentracing.SpanContext, operationName string
 }
 
 // StartSpanWithHeader will look in the headers to look for a parent span before starting the new span.
-// example:
-//  func handleGet(c *gin.Context) {
-//     span := StartSpanWithHeader(&c.Request.Header, "api-request", method, path)
-//     defer span.Finish()
-//     c.Set(spanContextKey, span) // add the span to the context so it can be used for the duration of the request.
-//     bosePersonID := c.Param("bosePersonID")
-//     span.SetTag("bosePersonID", bosePersonID)
-//
 func StartSpanWithHeader(header *http.Header, tracer opentracing.Tracer, operationName, method, path string) opentracing.Span {
 	var wireContext opentracing.SpanContext
 	if header != nil {
 		wireContext, _ = tracer.Extract(opentracing.HTTPHeaders, opentracing.HTTPHeadersCarrier(*header))
 	}
 	return StartSpanWithParent(wireContext, operationName, method, path, tracer)
-}
-
-// NewSpan returns gin.HandlerFunc (middleware) that starts a new span and injects it to request context.
-//
-// It calls ctx.Next() to measure execution time of all following handlers.
-func NewSpan(tracer opentracing.Tracer, operationName string, opts ...opentracing.StartSpanOption) gin.HandlerFunc {
-	return func(ctx *gin.Context) {
-		span := tracer.StartSpan(operationName, opts...)
-		ctx.Set(spanContextKey, span)
-		defer span.Finish()
-
-		ctx.Next()
-	}
 }
 
 // ParentSpanReferenceFunc determines how to reference parent span
@@ -256,14 +233,14 @@ func InjectToBinary(r *rest.Request, inter Injectable) {
 	_ = tracer.Inject(span.Context(), opentracing.Binary, inter.GetIoWriter()) // TODO: error handling
 }
 
-func ExtractFromBinary(tracer opentracing.Tracer, inter Injectable) opentracing.SpanContext {
-	spanCtx, _ := tracer.Extract(opentracing.Binary, inter.GetIoReader()) // TODO: error handling
-	return spanCtx
+func ExtractFromBinary(tracer opentracing.Tracer, inter Injectable) (opentracing.SpanContext, error) {
+	spanCtx, err := tracer.Extract(opentracing.Binary, inter.GetIoReader()) // TODO: error handling
+	return spanCtx, err
 }
 
-func StartSpanFromBinary(tracer opentracing.Tracer, inter Injectable, operName string) opentracing.Span {
-	ctx := ExtractFromBinary(tracer, inter)
-	return StartSpanWithBinParent(ctx, operName, tracer)
+func StartSpanFromBinary(tracer opentracing.Tracer, inter Injectable, operName string) (opentracing.Span, error) {
+	ctx, err := ExtractFromBinary(tracer, inter)
+	return StartSpanWithBinParent(ctx, operName, tracer), err
 }
 
 func GetSubSpan(spanRoot opentracing.Span, operationName string, opt ...opentracing.StartSpanOption) opentracing.Span {
