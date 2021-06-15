@@ -30,7 +30,7 @@ func OpenTracerGinMiddleware(operationPrefix []byte, tracer opentracing.Tracer) 
 }
 
 // OpenTracerGorestMiddleware - middleware that adds opentracing
-func OpenTracerGorestMiddleware(operationPrefix []byte, tracer opentracing.Tracer) rest.MiddlewareSimple {
+func OpenTracerGorestMiddleware(operationPrefix []byte, tracer *opentracing.Tracer) rest.MiddlewareSimple {
 	return func(next rest.HandlerFunc) rest.HandlerFunc {
 		if operationPrefix == nil {
 			operationPrefix = []byte("api-request")

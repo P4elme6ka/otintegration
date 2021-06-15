@@ -3,6 +3,7 @@ package otracing2gin
 import (
 	"fmt"
 	"github.com/opentracing/opentracing-go"
+	"github.com/prometheus/client_golang/prometheus"
 	"github.com/sirupsen/logrus"
 	"github.com/uber/jaeger-client-go"
 	jaegerprom "github.com/uber/jaeger-lib/metrics/prometheus"
@@ -63,7 +64,7 @@ func InitTracing(serviceName string, tracingAgentHostPort string, opt ...Option)
 	for _, o := range opt {
 		o(&opts)
 	}
-	factory := jaegerprom.New()
+	factory := jaegerprom.New(jaegerprom.WithRegisterer(prometheus.NewRegistry()))
 	metrics := jaeger.NewMetrics(factory, map[string]string{"lib": "jaeger"})
 
 	transport, err := jaeger.NewUDPTransport(tracingAgentHostPort, 0)
