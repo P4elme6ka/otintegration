@@ -8,7 +8,7 @@ import (
 )
 
 // OpenTracerGinMiddleware - middleware that adds opentracing
-func OpenTracerGinMiddleware(operationPrefix []byte) gin.HandlerFunc {
+func OpenTracerGinMiddleware(operationPrefix []byte, tracer opentracing.Tracer) gin.HandlerFunc {
 	if operationPrefix == nil {
 		operationPrefix = []byte("api-request")
 	}
@@ -19,7 +19,7 @@ func OpenTracerGinMiddleware(operationPrefix []byte) gin.HandlerFunc {
 			span = StartSpanWithParent(cspan.(opentracing.Span).Context(), string(operationPrefix)+" "+c.Request.URL.Path, c.Request.Method, c.Request.URL.Path)
 
 		} else {
-			span = StartSpanWithHeader(&c.Request.Header, string(operationPrefix)+" "+c.Request.URL.Path, c.Request.Method, c.Request.URL.Path)
+			span = StartSpanWithHeader(&c.Request.Header, tracer, string(operationPrefix)+" "+c.Request.URL.Path, c.Request.Method, c.Request.URL.Path)
 		}
 		defer span.Finish()         // after all the other defers are completed.. finish the span
 		c.Set(spanContextKey, span) // add the span to the context so it can be used for the duration of the request.
@@ -30,7 +30,7 @@ func OpenTracerGinMiddleware(operationPrefix []byte) gin.HandlerFunc {
 }
 
 // OpenTracerGorestMiddleware - middleware that adds opentracing
-func OpenTracerGorestMiddleware(operationPrefix []byte) rest.MiddlewareSimple {
+func OpenTracerGorestMiddleware(operationPrefix []byte, tracer opentracing.Tracer) rest.MiddlewareSimple {
 	return func(next rest.HandlerFunc) rest.HandlerFunc {
 		if operationPrefix == nil {
 			operationPrefix = []byte("api-request")
@@ -41,7 +41,7 @@ func OpenTracerGorestMiddleware(operationPrefix []byte) rest.MiddlewareSimple {
 				span = StartSpanWithParent(cspan.(opentracing.Span).Context(), string(operationPrefix)+" "+r.URL.Path, r.Method, r.URL.Path)
 
 			} else {
-				span = StartSpanWithHeader(&r.Header, string(operationPrefix)+" "+r.URL.Path, r.Method, r.URL.Path)
+				span = StartSpanWithHeader(&r.Header, tracer, string(operationPrefix)+" "+r.URL.Path, r.Method, r.URL.Path)
 			}
 			defer span.Finish() // after all the other defers are completed, finish the span
 

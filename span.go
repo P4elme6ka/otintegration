@@ -88,35 +88,12 @@ func StartSpanWithBinParent(parent opentracing.SpanContext, operationName string
 //     bosePersonID := c.Param("bosePersonID")
 //     span.SetTag("bosePersonID", bosePersonID)
 //
-func StartSpanWithHeader(header *http.Header, operationName, method, path string) opentracing.Span {
+func StartSpanWithHeader(header *http.Header, tracer opentracing.Tracer, operationName, method, path string) opentracing.Span {
 	var wireContext opentracing.SpanContext
 	if header != nil {
-		wireContext, _ = opentracing.GlobalTracer().Extract(opentracing.HTTPHeaders, opentracing.HTTPHeadersCarrier(*header))
+		wireContext, _ = tracer.Extract(opentracing.HTTPHeaders, opentracing.HTTPHeadersCarrier(*header))
 	}
 	return StartSpanWithParent(wireContext, operationName, method, path)
-}
-
-// InjectTraceID injects the span ID into the provided HTTP header object, so that the
-// current span will be propogated downstream to the server responding to an HTTP request.
-// Specifying the span ID in this way will allow the tracing system to connect spans
-// between servers.
-//
-//  Usage:
-//          // resty example
-// 	    r := resty.R()
-//	    injectTraceID(span, r.Header)
-//	    resp, err := r.Get(fmt.Sprintf("http://localhost:8000/users/%s", bosePersonID))
-//
-//          // galapagos_clients example
-//          c := galapagos_clients.GetHTTPClient()
-//          req, err := http.NewRequest("GET", fmt.Sprintf("http://localhost:8000/users/%s", bosePersonID))
-//          injectTraceID(span, req.Header)
-//          c.Do(req)
-func InjectTraceID(ctx opentracing.SpanContext, header http.Header) {
-	opentracing.GlobalTracer().Inject(
-		ctx,
-		opentracing.HTTPHeaders,
-		opentracing.HTTPHeadersCarrier(header))
 }
 
 // NewSpan returns gin.HandlerFunc (middleware) that starts a new span and injects it to request context.
