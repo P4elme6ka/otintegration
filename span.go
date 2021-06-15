@@ -4,6 +4,7 @@ import (
 	"errors"
 	"github.com/ant0ine/go-json-rest/rest"
 	"github.com/gin-gonic/gin"
+	"io"
 	"net/http"
 	"runtime"
 
@@ -17,6 +18,11 @@ const spanContextKey = "tracing-context"
 var (
 	ErrSpanNotFound = errors.New("span was not found in context")
 )
+
+type Injectable interface {
+	GetIoWriter() io.Writer
+	GetIoReader() io.Reader
+}
 
 // StartSpan will start a new span with no parent span.
 func StartSpan(operationName, method, path string) opentracing.Span {
@@ -50,6 +56,19 @@ func StartSpanWithParent(parent opentracing.SpanContext, operationName, method, 
 		opentracing.Tag{Key: ext.SpanKindRPCServer.Key, Value: ext.SpanKindRPCServer.Value},
 		opentracing.Tag{Key: string(ext.HTTPMethod), Value: method},
 		opentracing.Tag{Key: string(ext.HTTPUrl), Value: path},
+		opentracing.Tag{Key: "current-goroutines", Value: runtime.NumGoroutine()},
+	}
+
+	if parent != nil {
+		options = append(options, opentracing.ChildOf(parent))
+	}
+
+	return opentracing.StartSpan(operationName, options...)
+}
+
+func StartSpanWithBinParent(parent opentracing.SpanContext, operationName string) opentracing.Span {
+	options := []opentracing.StartSpanOption{
+		opentracing.Tag{Key: ext.SpanKindRPCServer.Key, Value: ext.SpanKindRPCServer.Value},
 		opentracing.Tag{Key: "current-goroutines", Value: runtime.NumGoroutine()},
 	}
 
@@ -253,6 +272,19 @@ func GetGorestSubSpan(r *rest.Request, operationName string) (opentracing.Span, 
 	}
 	sub := GetSubSpan(span, operationName)
 	return sub, nil
+}
+
+func InjectToBinary(r *rest.Request, inter Injectable) {
+	span, _ := GetGorestSpan(r)
+	tracer := span.Tracer()
+	_ = tracer.Inject(span.Context(), opentracing.Binary, inter.GetIoWriter()) // TODO: error handling
+}
+
+func ExtractFromBinary(tracer opentracing.Tracer, inteface Injectable, operationName string) opentracing.Span {
+
+	spanCtx, _ := tracer.Extract(opentracing.Binary, inteface.GetIoWriter()) // TODO: error handling
+
+	return StartSpanWithBinParent(spanCtx, operationName)
 }
 
 func GetSubSpan(spanRoot opentracing.Span, operationName string, opt ...opentracing.StartSpanOption) opentracing.Span {
