@@ -25,12 +25,12 @@ type Injectable interface {
 }
 
 // StartSpan will start a new span with no parent span.
-func StartSpan(operationName, method, path string) opentracing.Span {
-	return StartSpanWithParent(nil, operationName, method, path)
+func StartSpan(operationName, method, path string, tracer opentracing.Tracer) opentracing.Span {
+	return StartSpanWithParent(nil, operationName, method, path, tracer)
 }
 
 // StartDBSpanWithParent - start a DB operation span
-func StartDBSpanWithParent(parent opentracing.SpanContext, operationName, dbInstance, dbType, dbStatement string) opentracing.Span {
+func StartDBSpanWithParent(parent opentracing.SpanContext, operationName, dbInstance, dbType, dbStatement string, tracer opentracing.Tracer) opentracing.Span {
 	options := []opentracing.StartSpanOption{opentracing.Tag{Key: ext.SpanKindRPCServer.Key, Value: ext.SpanKindRPCServer.Value}}
 	if len(dbInstance) > 0 {
 		options = append(options, opentracing.Tag{Key: string(ext.DBInstance), Value: dbInstance})
@@ -45,13 +45,13 @@ func StartDBSpanWithParent(parent opentracing.SpanContext, operationName, dbInst
 		options = append(options, opentracing.ChildOf(parent))
 	}
 
-	return opentracing.StartSpan(operationName, options...)
+	return tracer.StartSpan(operationName, options...)
 }
 
 // StartSpanWithParent will start a new span with a parent span.
 // example:
 //      span:= StartSpanWithParent(c.Get(spanContextKey),
-func StartSpanWithParent(parent opentracing.SpanContext, operationName, method, path string) opentracing.Span {
+func StartSpanWithParent(parent opentracing.SpanContext, operationName, method, path string, tracer opentracing.Tracer) opentracing.Span {
 	options := []opentracing.StartSpanOption{
 		opentracing.Tag{Key: ext.SpanKindRPCServer.Key, Value: ext.SpanKindRPCServer.Value},
 		opentracing.Tag{Key: string(ext.HTTPMethod), Value: method},
@@ -62,11 +62,10 @@ func StartSpanWithParent(parent opentracing.SpanContext, operationName, method, 
 	if parent != nil {
 		options = append(options, opentracing.ChildOf(parent))
 	}
-
-	return opentracing.StartSpan(operationName, options...)
+	return tracer.StartSpan(operationName, options...)
 }
 
-func StartSpanWithBinParent(parent opentracing.SpanContext, operationName string) opentracing.Span {
+func StartSpanWithBinParent(parent opentracing.SpanContext, operationName string, tracer opentracing.Tracer) opentracing.Span {
 	options := []opentracing.StartSpanOption{
 		opentracing.Tag{Key: ext.SpanKindRPCServer.Key, Value: ext.SpanKindRPCServer.Value},
 		opentracing.Tag{Key: "current-goroutines", Value: runtime.NumGoroutine()},
@@ -76,7 +75,7 @@ func StartSpanWithBinParent(parent opentracing.SpanContext, operationName string
 		options = append(options, opentracing.ChildOf(parent))
 	}
 
-	return opentracing.StartSpan(operationName, options...)
+	return tracer.StartSpan(operationName, options...)
 }
 
 // StartSpanWithHeader will look in the headers to look for a parent span before starting the new span.
