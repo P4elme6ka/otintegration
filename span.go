@@ -1,11 +1,11 @@
 package otracing2gin
 
 import (
+	"bytes"
 	"errors"
 	"github.com/ant0ine/go-json-rest/rest"
 	"github.com/gin-gonic/gin"
 	"github.com/opentracing/opentracing-go/log"
-	"io"
 	"net/http"
 	"runtime"
 
@@ -21,8 +21,7 @@ var (
 )
 
 type Injectable interface {
-	GetIoWriter() io.Writer
-	GetIoReader() io.Reader
+	GetBuff() bytes.Buffer
 }
 
 // StartSpan will start a new span with no parent span.
