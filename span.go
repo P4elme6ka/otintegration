@@ -230,11 +230,11 @@ func GetGorestSubSpan(r *rest.Request, operationName string) (opentracing.Span, 
 func InjectToBinary(r *rest.Request, inter Injectable) {
 	span, _ := GetGorestSpan(r)
 	tracer := span.Tracer()
-	_ = tracer.Inject(span.Context(), opentracing.Binary, inter) // TODO: error handling
+	_ = tracer.Inject(span.Context(), opentracing.Binary, inter.GetBuff()) // TODO: error handling
 }
 
 func ExtractFromBinary(tracer opentracing.Tracer, inter Injectable) (opentracing.SpanContext, error) {
-	spanCtx, err := tracer.Extract(opentracing.Binary, inter) // TODO: error handling
+	spanCtx, err := tracer.Extract(opentracing.Binary, inter.GetBuff()) // TODO: error handling
 	return spanCtx, err
 }
 
