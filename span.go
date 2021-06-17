@@ -129,7 +129,7 @@ func InjectToBinary(r *rest.Request, inter Injectable) error {
 		return err
 	}
 	tracer := span.Tracer()
-	err = tracer.Inject(span.Context(), opentracing.Binary, *inter.GetBuff())
+	err = tracer.Inject(span.Context(), opentracing.Binary, inter.GetBuff())
 	return err
 }
 
