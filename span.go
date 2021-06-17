@@ -22,8 +22,8 @@ var (
 )
 
 type Injectable interface {
-	GetWriter() *io.Writer
-	GetReader() *io.Reader
+	GetWriter() io.Writer
+	GetReader() io.Reader
 }
 
 // StartSpan will start a new span with no parent span.
