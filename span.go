@@ -58,15 +58,15 @@ func StartSpanWithBinParent(tracer opentracing.Tracer, parent opentracing.SpanCo
 }
 
 // StartSpanWithHeader will look in the headers to look for a parent span before starting the new span.
-func StartSpanWithHeader(tracer opentracing.Tracer, header *http.Header, operationName, method, path string) (opentracing.Span, error) {
+func StartSpanWithHeader(tracer opentracing.Tracer, header *http.Header, operationName, method, path string) opentracing.Span {
 	if header != nil {
 		ctx, err := tracer.Extract(opentracing.HTTPHeaders, opentracing.HTTPHeadersCarrier(*header))
 		if err != nil {
-			return nil, err
+			StartSpanWithParent(tracer, nil, operationName, method, path)
 		}
-		return StartSpanWithParent(tracer, ctx, operationName, method, path), nil
+		return StartSpanWithParent(tracer, ctx, operationName, method, path)
 	}
-	return StartSpanWithParent(tracer, nil, operationName, method, path), nil
+	return StartSpanWithParent(tracer, nil, operationName, method, path)
 }
 
 // GetGinSpan extracts span from gin context.
