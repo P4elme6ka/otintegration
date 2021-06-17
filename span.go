@@ -145,7 +145,7 @@ func GetSubSpan(spanRoot opentracing.Span, operationName string, opt ...opentrac
 	return spanRoot.Tracer().StartSpan(operationName, opt...)
 }
 
-func NewEmptySpan() opentracing.Span {
+func NewEmptySpan() EmptySpan {
 	return EmptySpan{}
 }
 
