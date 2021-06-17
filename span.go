@@ -173,6 +173,6 @@ func (e EmptySpan) Tracer() opentracing.Tracer { return nil }
 
 func (e EmptySpan) LogEvent(string) {}
 
-func (e EmptySpan) LogEventWithPayload(interface{}) {}
+func (e EmptySpan) LogEventWithPayload(string, interface{}) {}
 
 func (e EmptySpan) Log(opentracing.LogData) {}
