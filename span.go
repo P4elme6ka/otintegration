@@ -111,16 +111,15 @@ func GetGorestSubSpan(r *rest.Request, operationName string) (opentracing.Span, 
 
 // ExtractFromBinary extracts context from Injectable interface
 func ExtractFromBinary(tracer opentracing.Tracer, inter Injectable) (opentracing.SpanContext, error) {
-	var bt []byte
-	_, err := inter.GetBuff().Read(bt)
+	spanCtx, err := tracer.Extract(opentracing.Binary, inter.GetBuff())
 	if err != nil {
 		return nil, err
 	}
-	inter.GetBuff().Write(bt)
-	bf := bytes.NewBuffer(bt)
-
-	spanCtx, err := tracer.Extract(opentracing.Binary, bf)
-	return spanCtx, err
+	err = inter.GetBuff().UnreadByte()
+	if err != nil {
+		return nil, err
+	}
+	return spanCtx, nil
 }
 
 func InjectToBinary(r *rest.Request, inter Injectable) error {
