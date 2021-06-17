@@ -15,14 +15,19 @@ func OpenTracerGinMiddleware(operationPrefix []byte, tracer opentracing.Tracer) 
 	return func(c *gin.Context) {
 		// all before request is handled
 		var span opentracing.Span
+		var err error
 		if cspan, ok := c.Get(spanContextKey); ok {
-			span = StartSpanWithParent(cspan.(opentracing.Span).Context(), string(operationPrefix)+" "+c.Request.URL.Path, c.Request.Method, c.Request.URL.Path, tracer)
+			span = StartSpanWithParent(tracer, cspan.(opentracing.Span).Context(), string(operationPrefix)+" "+c.Request.URL.Path, c.Request.Method, c.Request.URL.Path)
 
 		} else {
-			span = StartSpanWithHeader(&c.Request.Header, tracer, string(operationPrefix)+" "+c.Request.URL.Path, c.Request.Method, c.Request.URL.Path)
+			span, err = StartSpanWithHeader(tracer, &c.Request.Header, string(operationPrefix)+" "+c.Request.URL.Path, c.Request.Method, c.Request.URL.Path)
+			if err != nil {
+				c.Next()
+				return
+			}
 		}
-		defer span.Finish()         // after all the other defers are completed.. finish the span
-		c.Set(spanContextKey, span) // add the span to the context so it can be used for the duration of the request.
+		defer span.Finish()
+		c.Set(spanContextKey, span)
 		c.Next()
 
 		span.SetTag(string(ext.HTTPStatusCode), c.Writer.Status())
@@ -37,11 +42,16 @@ func OpenTracerGorestMiddleware(operationPrefix []byte, tracer opentracing.Trace
 		}
 		return func(w rest.ResponseWriter, r *rest.Request) {
 			var span opentracing.Span
+			var err error
 			if cspan, ok := r.Env[spanContextKey]; ok {
-				span = StartSpanWithParent(cspan.(opentracing.Span).Context(), string(operationPrefix)+" "+r.URL.Path, r.Method, r.URL.Path, tracer)
+				span = StartSpanWithParent(tracer, cspan.(opentracing.Span).Context(), string(operationPrefix)+" "+r.URL.Path, r.Method, r.URL.Path)
 
 			} else {
-				span = StartSpanWithHeader(&r.Header, tracer, string(operationPrefix)+" "+r.URL.Path, r.Method, r.URL.Path)
+				span, err = StartSpanWithHeader(tracer, &r.Header, string(operationPrefix)+" "+r.URL.Path, r.Method, r.URL.Path)
+				if err != nil {
+					next(w, r)
+					return
+				}
 			}
 			defer span.Finish() // after all the other defers are completed, finish the span
 
