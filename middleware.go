@@ -15,16 +15,11 @@ func OpenTracerGinMiddleware(operationPrefix []byte, tracer opentracing.Tracer) 
 	return func(c *gin.Context) {
 		// all before request is handled
 		var span opentracing.Span
-		var err error
 		if cspan, ok := c.Get(spanContextKey); ok {
 			span = StartSpanWithParent(tracer, cspan.(opentracing.Span).Context(), string(operationPrefix)+" "+c.Request.URL.Path, c.Request.Method, c.Request.URL.Path)
 
 		} else {
-			span, err = StartSpanWithHeader(tracer, &c.Request.Header, string(operationPrefix)+" "+c.Request.URL.Path, c.Request.Method, c.Request.URL.Path)
-			if err != nil {
-				c.Next()
-				return
-			}
+			span = StartSpanWithHeader(tracer, &c.Request.Header, string(operationPrefix)+" "+c.Request.URL.Path, c.Request.Method, c.Request.URL.Path)
 		}
 		defer span.Finish()
 		c.Set(spanContextKey, span)
@@ -42,16 +37,11 @@ func OpenTracerGorestMiddleware(operationPrefix []byte, tracer opentracing.Trace
 		}
 		return func(w rest.ResponseWriter, r *rest.Request) {
 			var span opentracing.Span
-			var err error
 			if cspan, ok := r.Env[spanContextKey]; ok {
 				span = StartSpanWithParent(tracer, cspan.(opentracing.Span).Context(), string(operationPrefix)+" "+r.URL.Path, r.Method, r.URL.Path)
 
 			} else {
-				span, err = StartSpanWithHeader(tracer, &r.Header, string(operationPrefix)+" "+r.URL.Path, r.Method, r.URL.Path)
-				if err != nil {
-					next(w, r)
-					return
-				}
+				span = StartSpanWithHeader(tracer, &r.Header, string(operationPrefix)+" "+r.URL.Path, r.Method, r.URL.Path)
 			}
 			defer span.Finish() // after all the other defers are completed, finish the span
 
