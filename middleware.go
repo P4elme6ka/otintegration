@@ -1,4 +1,4 @@
-package otracing2gin
+package otintegration
 
 import (
 	"github.com/ant0ine/go-json-rest/rest"
