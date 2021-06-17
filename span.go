@@ -6,6 +6,7 @@ import (
 	"github.com/ant0ine/go-json-rest/rest"
 	"github.com/gin-gonic/gin"
 	"github.com/opentracing/opentracing-go/log"
+	"io"
 	"net/http"
 	"runtime"
 
@@ -21,7 +22,8 @@ var (
 )
 
 type Injectable interface {
-	GetBuff() *bytes.Buffer
+	GetWriter() *io.Writer
+	GetReader() *io.Reader
 }
 
 // StartSpan will start a new span with no parent span.
@@ -38,6 +40,7 @@ func StartSpanWithParent(tracer opentracing.Tracer, parent opentracing.SpanConte
 		opentracing.Tag{Key: "current-goroutines", Value: runtime.NumGoroutine()},
 	}
 
+	bytes.NewBuffer([]byte("ff"))
 	if parent != nil {
 		options = append(options, opentracing.ChildOf(parent))
 	}
@@ -111,7 +114,7 @@ func GetGorestSubSpan(r *rest.Request, operationName string) (opentracing.Span, 
 
 // ExtractFromBinary extracts context from Injectable interface
 func ExtractFromBinary(tracer opentracing.Tracer, inter Injectable) (opentracing.SpanContext, error) {
-	spanCtx, err := tracer.Extract(opentracing.Binary, inter.GetBuff())
+	spanCtx, err := tracer.Extract(opentracing.Binary, inter.GetReader())
 	if err != nil {
 		return nil, err
 	}
@@ -119,7 +122,7 @@ func ExtractFromBinary(tracer opentracing.Tracer, inter Injectable) (opentracing
 }
 
 func InjectToBinary(tracer opentracing.Tracer, ctx opentracing.SpanContext, inter Injectable) {
-	tracer.Inject(ctx, opentracing.Binary, inter.GetBuff())
+	tracer.Inject(ctx, opentracing.Binary, inter.GetWriter())
 }
 
 func InjectGorestToBinary(r *rest.Request, inter Injectable) error {
@@ -128,7 +131,7 @@ func InjectGorestToBinary(r *rest.Request, inter Injectable) error {
 		return err
 	}
 	tracer := span.Tracer()
-	err = tracer.Inject(span.Context(), opentracing.Binary, inter.GetBuff())
+	err = tracer.Inject(span.Context(), opentracing.Binary, inter.GetWriter())
 	return err
 }
 
