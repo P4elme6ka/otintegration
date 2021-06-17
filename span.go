@@ -145,7 +145,7 @@ func GetSubSpan(spanRoot opentracing.Span, operationName string, opt ...opentrac
 	return spanRoot.Tracer().StartSpan(operationName, opt...)
 }
 
-func NewEmptySpan() EmptySpan {
+func NewEmptySpan() opentracing.Span {
 	return EmptySpan{}
 }
 
@@ -165,7 +165,7 @@ func (e EmptySpan) LogFields(...log.Field) {}
 
 func (e EmptySpan) LogKV(...interface{}) {}
 
-func (e EmptySpan) SetBaggageItem(string) opentracing.Span { return nil }
+func (e EmptySpan) SetBaggageItem(string, string) opentracing.Span { return nil }
 
 func (e EmptySpan) BaggageItem(string) string { return "" }
 
