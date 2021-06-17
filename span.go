@@ -119,7 +119,7 @@ func ExtractFromBinary(tracer opentracing.Tracer, inter Injectable) (opentracing
 	inter.GetBuff().Write(bt)
 	bf := bytes.NewBuffer(bt)
 
-	spanCtx, err := tracer.Extract(opentracing.Binary, bf)
+	spanCtx, err := tracer.Extract(opentracing.Binary, *bf)
 	return spanCtx, err
 }
 
@@ -129,7 +129,7 @@ func InjectToBinary(r *rest.Request, inter Injectable) error {
 		return err
 	}
 	tracer := span.Tracer()
-	err = tracer.Inject(span.Context(), opentracing.Binary, inter.GetBuff())
+	err = tracer.Inject(span.Context(), opentracing.Binary, *inter.GetBuff())
 	return err
 }
 
