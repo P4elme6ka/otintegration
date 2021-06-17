@@ -1,3 +1,4 @@
+OpenTracing go integration to everywhere
 Cross merged and supplemented(for me personally) repos:
 
 https://github.com/Bose/go-gin-opentracing
@@ -6,4 +7,4 @@ and
 
 https://github.com/gin-contrib/opengintracing
 
-For simple trace integration to gin.
+For simple trace integration to gin || gorest || any other framework.
