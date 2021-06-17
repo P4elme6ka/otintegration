@@ -119,7 +119,7 @@ func ExtractFromBinary(tracer opentracing.Tracer, inter Injectable) (opentracing
 	inter.GetBuff().Write(bt)
 	bf := bytes.NewBuffer(bt)
 
-	spanCtx, err := tracer.Extract(opentracing.Binary, *bf)
+	spanCtx, err := tracer.Extract(opentracing.Binary, bf)
 	return spanCtx, err
 }
 
