@@ -21,11 +21,6 @@ var (
 	ErrSpanNotFound = errors.New("span was not found in context")
 )
 
-type Injectable interface {
-	GetWriter() io.Writer
-	GetReader() io.Reader
-}
-
 // StartSpan will start a new span with no parent span.
 func StartSpan(tracer opentracing.Tracer, operationName, method, path string) opentracing.Span {
 	return StartSpanWithParent(tracer, nil, operationName, method, path)
@@ -113,30 +108,30 @@ func GetGorestSubSpan(r *rest.Request, operationName string) (opentracing.Span, 
 }
 
 // ExtractFromBinary extracts context from Injectable interface
-func ExtractFromBinary(tracer opentracing.Tracer, inter Injectable) (opentracing.SpanContext, error) {
-	spanCtx, err := tracer.Extract(opentracing.Binary, inter.GetReader())
+func ExtractFromBinary(tracer opentracing.Tracer, inter io.ReadWriter) (opentracing.SpanContext, error) {
+	spanCtx, err := tracer.Extract(opentracing.Binary, inter)
 	if err != nil {
 		return nil, err
 	}
 	return spanCtx, nil
 }
 
-func InjectToBinary(tracer opentracing.Tracer, ctx opentracing.SpanContext, inter Injectable) {
-	tracer.Inject(ctx, opentracing.Binary, inter.GetWriter())
+func InjectToBinary(tracer opentracing.Tracer, ctx opentracing.SpanContext, inter io.ReadWriter) {
+	tracer.Inject(ctx, opentracing.Binary, inter)
 }
 
-func InjectGorestToBinary(r *rest.Request, inter Injectable) error {
+func InjectGorestToBinary(r *rest.Request, inter io.ReadWriter) error {
 	span, err := GetGorestSpan(r)
 	if err != nil {
 		return err
 	}
 	tracer := span.Tracer()
-	err = tracer.Inject(span.Context(), opentracing.Binary, inter.GetWriter())
+	err = tracer.Inject(span.Context(), opentracing.Binary, inter)
 	return err
 }
 
 // StartSpanFromBinary return new span from Injectable interface
-func StartSpanFromBinary(tracer opentracing.Tracer, inter Injectable, operName string) (opentracing.Span, error) {
+func StartSpanFromBinary(tracer opentracing.Tracer, inter io.ReadWriter, operName string) (opentracing.Span, error) {
 	ctx, err := ExtractFromBinary(tracer, inter)
 	return StartSpanWithBinParent(tracer, ctx, operName), err
 }
