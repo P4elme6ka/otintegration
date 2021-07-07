@@ -130,6 +130,16 @@ func InjectGorestToBinary(r *rest.Request, inter io.ReadWriter) error {
 	return err
 }
 
+func InjectGinToBinary(c *gin.Context, inter io.ReadWriter) error {
+	span, err := GetGinSpan(c)
+	if err != nil {
+		return err
+	}
+	tracer := span.Tracer()
+	err = tracer.Inject(span.Context(), opentracing.Binary, inter)
+	return err
+}
+
 // StartSpanFromBinary return new span from Injectable interface
 func StartSpanFromBinary(tracer opentracing.Tracer, inter io.ReadWriter, operName string) (opentracing.Span, error) {
 	ctx, err := ExtractFromBinary(tracer, inter)
