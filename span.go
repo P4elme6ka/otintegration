@@ -21,6 +21,11 @@ var (
 	ErrSpanNotFound = errors.New("span was not found in context")
 )
 
+type TraceInfo interface {
+	io.ReadWriter
+	Check() bool
+}
+
 // StartSpan will start a new span with no parent span.
 func StartSpan(tracer opentracing.Tracer, operationName, method, path string) opentracing.Span {
 	return StartSpanWithParent(tracer, nil, operationName, method, path)
@@ -108,7 +113,7 @@ func GetGorestSubSpan(r *rest.Request, operationName string) (opentracing.Span, 
 }
 
 // ExtractFromBinary extracts context from Injectable interface
-func ExtractFromBinary(tracer opentracing.Tracer, inter io.ReadWriter) (opentracing.SpanContext, error) {
+func ExtractFromBinary(tracer opentracing.Tracer, inter TraceInfo) (opentracing.SpanContext, error) {
 	spanCtx, err := tracer.Extract(opentracing.Binary, inter)
 	if err != nil {
 		return nil, err
@@ -116,11 +121,11 @@ func ExtractFromBinary(tracer opentracing.Tracer, inter io.ReadWriter) (opentrac
 	return spanCtx, nil
 }
 
-func InjectToBinary(tracer opentracing.Tracer, ctx opentracing.SpanContext, inter io.ReadWriter) {
+func InjectToBinary(tracer opentracing.Tracer, ctx opentracing.SpanContext, inter TraceInfo) {
 	tracer.Inject(ctx, opentracing.Binary, inter)
 }
 
-func InjectGorestToBinary(r *rest.Request, inter io.ReadWriter) error {
+func InjectGorestToBinary(r *rest.Request, inter TraceInfo) error {
 	span, err := GetGorestSpan(r)
 	if err != nil {
 		return err
@@ -130,7 +135,7 @@ func InjectGorestToBinary(r *rest.Request, inter io.ReadWriter) error {
 	return err
 }
 
-func InjectGinToBinary(c *gin.Context, inter io.ReadWriter) error {
+func InjectGinToBinary(c *gin.Context, inter TraceInfo) error {
 	span, err := GetGinSpan(c)
 	if err != nil {
 		return err
@@ -141,7 +146,7 @@ func InjectGinToBinary(c *gin.Context, inter io.ReadWriter) error {
 }
 
 // StartSpanFromBinary return new span from Injectable interface
-func StartSpanFromBinary(tracer opentracing.Tracer, inter io.ReadWriter, operName string) (opentracing.Span, error) {
+func StartSpanFromBinary(tracer opentracing.Tracer, inter TraceInfo, operName string) (opentracing.Span, error) {
 	ctx, err := ExtractFromBinary(tracer, inter)
 	return StartSpanWithBinParent(tracer, ctx, operName), err
 }
