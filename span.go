@@ -18,11 +18,6 @@ var (
 	ErrSpanNotFound = errors.New("span was not found in context")
 )
 
-var standartOptions = []opentracing.StartSpanOption{
-	opentracing.Tag{Key: ext.SpanKindRPCServer.Key, Value: ext.SpanKindRPCServer.Value},
-	opentracing.Tag{Key: "current-goroutines", Value: runtime.NumGoroutine()},
-}
-
 type TraceInfo interface {
 	io.ReadWriter
 	Reset()
@@ -39,8 +34,9 @@ func StartSpanWithParent(tracer opentracing.Tracer, parent opentracing.SpanConte
 	options := []opentracing.StartSpanOption{
 		opentracing.Tag{Key: string(ext.HTTPMethod), Value: method},
 		opentracing.Tag{Key: string(ext.HTTPUrl), Value: path},
+		opentracing.Tag{Key: ext.SpanKindRPCServer.Key, Value: ext.SpanKindRPCServer.Value},
+		opentracing.Tag{Key: "current-goroutines", Value: runtime.NumGoroutine()},
 	}
-	options = append(options, standartOptions...)
 
 	bytes.NewBuffer([]byte("ff"))
 	if parent != nil {
@@ -50,8 +46,11 @@ func StartSpanWithParent(tracer opentracing.Tracer, parent opentracing.SpanConte
 }
 
 func StartSpanWithBinParent(tracer opentracing.Tracer, parent opentracing.SpanContext, operationName string) opentracing.Span {
-	options := []opentracing.StartSpanOption{}
-	options = append(options, standartOptions...)
+	options := []opentracing.StartSpanOption{
+		opentracing.Tag{Key: ext.SpanKindRPCServer.Key, Value: ext.SpanKindRPCServer.Value},
+		opentracing.Tag{Key: "current-goroutines", Value: runtime.NumGoroutine()},
+	}
+
 	if parent != nil {
 		options = append(options, opentracing.ChildOf(parent))
 	}
@@ -93,10 +92,13 @@ func StartSpanFromBinary(tracer opentracing.Tracer, inter TraceInfo, operName st
 }
 
 // GetSubSpan return new span from existing
-func GetSubSpan(spanRoot opentracing.Span, operationName string, opt ...opentracing.StartSpanOption) opentracing.Span {
-	opt = append(opt, opentracing.ChildOf(spanRoot.Context()))
-	opt = append(opt, standartOptions...)
-	return spanRoot.Tracer().StartSpan(operationName, opt...)
+func GetSubSpan(spanRoot opentracing.Span, operationName string) opentracing.Span {
+	options := []opentracing.StartSpanOption{
+		opentracing.ChildOf(spanRoot.Context()),
+		opentracing.Tag{Key: ext.SpanKindRPCServer.Key, Value: ext.SpanKindRPCServer.Value},
+		opentracing.Tag{Key: "current-goroutines", Value: runtime.NumGoroutine()},
+	}
+	return spanRoot.Tracer().StartSpan(operationName, options...)
 }
 
 func NewEmptySpan() opentracing.Span {
