@@ -3,9 +3,6 @@ package otintegration
 import (
 	"bytes"
 	"errors"
-	"github.com/ant0ine/go-json-rest/rest"
-	"github.com/gin-gonic/gin"
-	"github.com/opentracing/opentracing-go/log"
 	"io"
 	"net/http"
 	"runtime"
@@ -21,6 +18,11 @@ var (
 	ErrSpanNotFound = errors.New("span was not found in context")
 )
 
+var standartOptions = []opentracing.StartSpanOption{
+	opentracing.Tag{Key: ext.SpanKindRPCServer.Key, Value: ext.SpanKindRPCServer.Value},
+	opentracing.Tag{Key: "current-goroutines", Value: runtime.NumGoroutine()},
+}
+
 type TraceInfo interface {
 	io.ReadWriter
 	Reset()
@@ -35,11 +37,10 @@ func StartSpan(tracer opentracing.Tracer, operationName, method, path string) op
 // StartSpanWithParent will start a new span with a parent span.
 func StartSpanWithParent(tracer opentracing.Tracer, parent opentracing.SpanContext, operationName, method, path string) opentracing.Span {
 	options := []opentracing.StartSpanOption{
-		opentracing.Tag{Key: ext.SpanKindRPCServer.Key, Value: ext.SpanKindRPCServer.Value},
 		opentracing.Tag{Key: string(ext.HTTPMethod), Value: method},
 		opentracing.Tag{Key: string(ext.HTTPUrl), Value: path},
-		opentracing.Tag{Key: "current-goroutines", Value: runtime.NumGoroutine()},
 	}
+	options = append(options, standartOptions...)
 
 	bytes.NewBuffer([]byte("ff"))
 	if parent != nil {
@@ -49,11 +50,8 @@ func StartSpanWithParent(tracer opentracing.Tracer, parent opentracing.SpanConte
 }
 
 func StartSpanWithBinParent(tracer opentracing.Tracer, parent opentracing.SpanContext, operationName string) opentracing.Span {
-	options := []opentracing.StartSpanOption{
-		opentracing.Tag{Key: ext.SpanKindRPCServer.Key, Value: ext.SpanKindRPCServer.Value},
-		opentracing.Tag{Key: "current-goroutines", Value: runtime.NumGoroutine()},
-	}
-
+	options := []opentracing.StartSpanOption{}
+	options = append(options, standartOptions...)
 	if parent != nil {
 		options = append(options, opentracing.ChildOf(parent))
 	}
@@ -73,46 +71,6 @@ func StartSpanWithHeader(tracer opentracing.Tracer, header *http.Header, operati
 	return StartSpanWithParent(tracer, nil, operationName, method, path)
 }
 
-// GetGinSpan extracts span from gin context.
-func GetGinSpan(ctx *gin.Context) (opentracing.Span, error) {
-	spanI, _ := ctx.Get(spanContextKey)
-	span, ok := spanI.(opentracing.Span)
-	if span == nil || !ok {
-		return nil, ErrSpanNotFound
-	}
-	return span, nil
-}
-
-// GetGinSubSpan return new span from gin context
-func GetGinSubSpan(ctx *gin.Context, operationName string) (opentracing.Span, error) {
-	s, err := GetGinSpan(ctx)
-	if err != nil {
-		return nil, err
-	}
-	span := GetSubSpan(s, operationName)
-	return span, nil
-}
-
-// GetGorestSpan extracts span from gorest request.
-func GetGorestSpan(r *rest.Request) (opentracing.Span, error) {
-	spanI, _ := r.Env[spanContextKey]
-	span, ok := spanI.(opentracing.Span)
-	if span == nil || !ok {
-		return nil, ErrSpanNotFound
-	}
-	return span, nil
-}
-
-// GetGorestSubSpan extracts span and returns new span from gorest request.
-func GetGorestSubSpan(r *rest.Request, operationName string) (opentracing.Span, error) {
-	s, err := GetGorestSpan(r)
-	if err != nil {
-		return nil, err
-	}
-	sub := GetSubSpan(s, operationName)
-	return sub, nil
-}
-
 // ExtractFromBinary extracts context from Injectable interface
 func ExtractFromBinary(tracer opentracing.Tracer, inter TraceInfo) (opentracing.SpanContext, error) {
 	spanCtx, err := tracer.Extract(opentracing.Binary, inter)
@@ -122,29 +80,10 @@ func ExtractFromBinary(tracer opentracing.Tracer, inter TraceInfo) (opentracing.
 	return spanCtx, nil
 }
 
+// InjectToBinary resets TracerInfo buff, and inject context to interface
 func InjectToBinary(tracer opentracing.Tracer, ctx opentracing.SpanContext, inter TraceInfo) {
 	inter.Reset()
 	tracer.Inject(ctx, opentracing.Binary, inter)
-}
-
-func InjectGorestToBinary(r *rest.Request, inter TraceInfo) error {
-	span, err := GetGorestSpan(r)
-	if err != nil {
-		return err
-	}
-	tracer := span.Tracer()
-	err = tracer.Inject(span.Context(), opentracing.Binary, inter)
-	return err
-}
-
-func InjectGinToBinary(c *gin.Context, inter TraceInfo) error {
-	span, err := GetGinSpan(c)
-	if err != nil {
-		return err
-	}
-	tracer := span.Tracer()
-	err = tracer.Inject(span.Context(), opentracing.Binary, inter)
-	return err
 }
 
 // StartSpanFromBinary return new span from Injectable interface
@@ -156,37 +95,10 @@ func StartSpanFromBinary(tracer opentracing.Tracer, inter TraceInfo, operName st
 // GetSubSpan return new span from existing
 func GetSubSpan(spanRoot opentracing.Span, operationName string, opt ...opentracing.StartSpanOption) opentracing.Span {
 	opt = append(opt, opentracing.ChildOf(spanRoot.Context()))
+	opt = append(opt, standartOptions...)
 	return spanRoot.Tracer().StartSpan(operationName, opt...)
 }
 
 func NewEmptySpan() opentracing.Span {
-	return EmptySpan{}
+	return opentracing.NoopTracer{}.StartSpan("")
 }
-
-type EmptySpan struct{}
-
-func (e EmptySpan) Finish() {}
-
-func (e EmptySpan) FinishWithOptions(opentracing.FinishOptions) {}
-
-func (e EmptySpan) Context() opentracing.SpanContext { return nil }
-
-func (e EmptySpan) SetOperationName(string) opentracing.Span { return nil }
-
-func (e EmptySpan) SetTag(string, interface{}) opentracing.Span { return nil }
-
-func (e EmptySpan) LogFields(...log.Field) {}
-
-func (e EmptySpan) LogKV(...interface{}) {}
-
-func (e EmptySpan) SetBaggageItem(string, string) opentracing.Span { return nil }
-
-func (e EmptySpan) BaggageItem(string) string { return "" }
-
-func (e EmptySpan) Tracer() opentracing.Tracer { return nil }
-
-func (e EmptySpan) LogEvent(string) {}
-
-func (e EmptySpan) LogEventWithPayload(string, interface{}) {}
-
-func (e EmptySpan) Log(opentracing.LogData) {}

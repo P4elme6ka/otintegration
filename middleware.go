@@ -8,18 +8,15 @@ import (
 )
 
 // OpenTracerGinMiddleware - middleware that adds opentracing
-func OpenTracerGinMiddleware(operationPrefix []byte, tracer opentracing.Tracer) gin.HandlerFunc {
-	if operationPrefix == nil {
-		operationPrefix = []byte("api-request")
-	}
+func OpenTracerGinMiddleware(operationPrefix string, tracer opentracing.Tracer) gin.HandlerFunc {
 	return func(c *gin.Context) {
 		// all before request is handled
 		var span opentracing.Span
 		if cspan, ok := c.Get(spanContextKey); ok {
-			span = StartSpanWithParent(tracer, cspan.(opentracing.Span).Context(), string(operationPrefix)+" "+c.Request.URL.Path, c.Request.Method, c.Request.URL.Path)
+			span = StartSpanWithParent(tracer, cspan.(opentracing.Span).Context(), operationPrefix+" "+c.Request.URL.Path, c.Request.Method, c.Request.URL.Path)
 
 		} else {
-			span = StartSpanWithHeader(tracer, &c.Request.Header, string(operationPrefix)+" "+c.Request.URL.Path, c.Request.Method, c.Request.URL.Path)
+			span = StartSpanWithHeader(tracer, &c.Request.Header, operationPrefix+" "+c.Request.URL.Path, c.Request.Method, c.Request.URL.Path)
 		}
 		defer span.Finish()
 		c.Set(spanContextKey, span)
@@ -30,18 +27,15 @@ func OpenTracerGinMiddleware(operationPrefix []byte, tracer opentracing.Tracer) 
 }
 
 // OpenTracerGorestMiddleware - middleware that adds opentracing
-func OpenTracerGorestMiddleware(operationPrefix []byte, tracer opentracing.Tracer) rest.MiddlewareSimple {
+func OpenTracerGorestMiddleware(operationPrefix string, tracer opentracing.Tracer) rest.MiddlewareSimple {
 	return func(next rest.HandlerFunc) rest.HandlerFunc {
-		if operationPrefix == nil {
-			operationPrefix = []byte("api-request")
-		}
 		return func(w rest.ResponseWriter, r *rest.Request) {
 			var span opentracing.Span
 			if cspan, ok := r.Env[spanContextKey]; ok {
-				span = StartSpanWithParent(tracer, cspan.(opentracing.Span).Context(), string(operationPrefix)+" "+r.URL.Path, r.Method, r.URL.Path)
+				span = StartSpanWithParent(tracer, cspan.(opentracing.Span).Context(), operationPrefix+" "+r.URL.Path, r.Method, r.URL.Path)
 
 			} else {
-				span = StartSpanWithHeader(tracer, &r.Header, string(operationPrefix)+" "+r.URL.Path, r.Method, r.URL.Path)
+				span = StartSpanWithHeader(tracer, &r.Header, operationPrefix+" "+r.URL.Path, r.Method, r.URL.Path)
 			}
 			defer span.Finish() // after all the other defers are completed, finish the span
 
