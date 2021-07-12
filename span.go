@@ -23,6 +23,7 @@ var (
 
 type TraceInfo interface {
 	io.ReadWriter
+	Reset()
 	Check() bool
 }
 
@@ -122,6 +123,7 @@ func ExtractFromBinary(tracer opentracing.Tracer, inter TraceInfo) (opentracing.
 }
 
 func InjectToBinary(tracer opentracing.Tracer, ctx opentracing.SpanContext, inter TraceInfo) {
+	inter.Reset()
 	tracer.Inject(ctx, opentracing.Binary, inter)
 }
 
